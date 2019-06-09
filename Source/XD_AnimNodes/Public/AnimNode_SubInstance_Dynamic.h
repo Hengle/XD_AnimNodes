@@ -18,12 +18,14 @@ struct XD_ANIMNODES_API FAnimNode_SubInstance_Dynamic : public FAnimNode_SubInst
 public:
 	UPROPERTY(BlueprintReadWrite, Category = "Settings")
 	TSubclassOf<UAnimInstance> DynamicInstanceClass;
-
+	
 	UPROPERTY(Transient)
 	TMap<TSubclassOf<UAnimInstance>, UAnimInstance*> DynamicInstanceMap;
 
 	bool HasPreUpdate() const override;
 	void PreUpdate(const UAnimInstance* InAnimInstance) override;
+
+	void CheckAndReinitAnimInstance(const UAnimInstance* InAnimInstance);
 
 	void Update_AnyThread(const FAnimationUpdateContext& Context) override;
 

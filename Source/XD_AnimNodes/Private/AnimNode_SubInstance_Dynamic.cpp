@@ -11,14 +11,17 @@ bool FAnimNode_SubInstance_Dynamic::HasPreUpdate() const
 void FAnimNode_SubInstance_Dynamic::PreUpdate(const UAnimInstance* InAnimInstance)
 {
 	Super::PreUpdate(InAnimInstance);
+	CheckAndReinitAnimInstance(InAnimInstance);
+}
+
+void FAnimNode_SubInstance_Dynamic::CheckAndReinitAnimInstance(const UAnimInstance* InAnimInstance)
+{
 	if (DynamicInstanceClass == nullptr)
 	{
 		return;
 	}
-	if (!DynamicInstanceClass->IsChildOf(InstanceClass))
-	{
-		DynamicInstanceClass = InstanceClass;
-	}
+
+	check(DynamicInstanceClass->IsChildOf(InstanceClass));
 
 	if (InstanceToRun == nullptr || InstanceToRun->GetClass() != DynamicInstanceClass)
 	{
@@ -37,7 +40,10 @@ void FAnimNode_SubInstance_Dynamic::PreUpdate(const UAnimInstance* InAnimInstanc
 		}
 		InstanceToRun = CachedAnimInstance;
 
-		MeshComp->SubInstances.Remove(PreInstance);
+		if (PreInstance)
+		{
+			MeshComp->SubInstances.Remove(InstanceToRun);
+		}
 		MeshComp->SubInstances.Add(InstanceToRun);
 	}
 }
@@ -69,7 +75,8 @@ void FAnimNode_SubInstance_Dynamic::OnInitializeAnimInstance(const FAnimInstance
 		for (TFieldIterator<UProperty> DestPropertyIterator(InstanceClass, EFieldIteratorFlags::ExcludeSuper); DestPropertyIterator; ++DestPropertyIterator)
 		{
 			UProperty* DestProperty = *DestPropertyIterator;
-			if (UStructProperty * StructProperty = Cast<UStructProperty>(DestProperty))
+
+			if (UStructProperty* StructProperty = Cast<UStructProperty>(DestProperty))
 			{
 				if (StructProperty->Struct->IsChildOf(FAnimNode_Base::StaticStruct()))
 				{
@@ -84,6 +91,8 @@ void FAnimNode_SubInstance_Dynamic::OnInitializeAnimInstance(const FAnimInstance
 				SubInstanceProperties.Add(DestProperty);
 			}
 		}
+
+		CheckAndReinitAnimInstance(InAnimInstance);
 	}
 	else if (InstanceToRun)
 	{

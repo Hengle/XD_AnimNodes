@@ -114,16 +114,13 @@ void UAGNode_SubInstance_Dynamic::ValidateAnimNodeDuringCompilation(USkeleton* F
 
 void UAGNode_SubInstance_Dynamic::ReallocatePinsDuringReconstruction(TArray<UEdGraphPin*>& OldPins)
 {
+	UClass* TargetClass = *Node.InstanceClass;
+	if (TargetClass)
+	{
+		CreatePin(EEdGraphPinDirection::EGPD_Input, UEdGraphSchema_K2::PC_Class, TargetClass, GET_MEMBER_NAME_CHECKED(FAnimNode_SubInstance_Dynamic, DynamicInstanceClass));
+	}
+
 	Super::ReallocatePinsDuringReconstruction(OldPins);
-
- 	UClass* TargetClass = *Node.InstanceClass;
- 	if (!TargetClass)
- 	{
- 		// Nothing to search for properties
- 		return;
- 	}
-
-	CreatePin(EEdGraphPinDirection::EGPD_Input, UEdGraphSchema_K2::PC_Class, TargetClass, GET_MEMBER_NAME_CHECKED(FAnimNode_SubInstance_Dynamic, DynamicInstanceClass));
 }
 
 void UAGNode_SubInstance_Dynamic::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
