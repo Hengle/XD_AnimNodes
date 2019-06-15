@@ -28,23 +28,28 @@ void FAnimNode_SubInstance_Dynamic::CheckAndReinitAnimInstance(const UAnimInstan
 		UAnimInstance* PreInstance = InstanceToRun;
 
 		USkeletalMeshComponent* MeshComp = InAnimInstance->GetSkelMeshComponent();
-		// Need an instance to run, so create it now
-		// We use the tag to name the object, but as we verify there are no duplicates in the compiler we
-		// dont need to verify it is unique here.
-		UAnimInstance*& CachedAnimInstance = DynamicInstanceMap.FindOrAdd(DynamicInstanceClass);
-		if (CachedAnimInstance == nullptr)
-		{
-			CachedAnimInstance = NewObject<UAnimInstance>(MeshComp, DynamicInstanceClass);
-			// Initialize the new instance
-			CachedAnimInstance->InitializeAnimation();
-		}
-		InstanceToRun = CachedAnimInstance;
 
-		if (PreInstance)
-		{
-			MeshComp->SubInstances.Remove(InstanceToRun);
-		}
-		MeshComp->SubInstances.Add(InstanceToRun);
+		//延迟一帧避免PreUpdate检测的报错
+		MeshComp->GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(MeshComp, [=]()
+			{
+				// Need an instance to run, so create it now
+				// We use the tag to name the object, but as we verify there are no duplicates in the compiler we
+				// dont need to verify it is unique here.
+				UAnimInstance*& CachedAnimInstance = DynamicInstanceMap.FindOrAdd(DynamicInstanceClass);
+				if (CachedAnimInstance == nullptr)
+				{
+					CachedAnimInstance = NewObject<UAnimInstance>(MeshComp, DynamicInstanceClass);
+					// Initialize the new instance
+					CachedAnimInstance->InitializeAnimation();
+				}
+				InstanceToRun = CachedAnimInstance;
+
+				if (PreInstance)
+				{
+					MeshComp->SubInstances.Remove(InstanceToRun);
+				}
+				MeshComp->SubInstances.Add(InstanceToRun);
+			}));
 	}
 }
 
