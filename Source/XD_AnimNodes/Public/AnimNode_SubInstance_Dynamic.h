@@ -27,6 +27,7 @@ public:
 
 	void CheckAndReinitAnimInstance(const UAnimInstance* InAnimInstance);
 
+	void Initialize_AnyThread(const FAnimationInitializeContext& Context) override;
 	void Update_AnyThread(const FAnimationUpdateContext& Context) override;
 
 	void OnInitializeAnimInstance(const FAnimInstanceProxy* InProxy, const UAnimInstance* InAnimInstance) override;

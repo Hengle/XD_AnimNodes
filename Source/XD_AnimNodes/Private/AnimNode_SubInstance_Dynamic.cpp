@@ -2,6 +2,7 @@
 
 
 #include "AnimNode_SubInstance_Dynamic.h"
+#include "AnimInstanceProxy.h"
 
 bool FAnimNode_SubInstance_Dynamic::HasPreUpdate() const
 {
@@ -29,33 +30,85 @@ void FAnimNode_SubInstance_Dynamic::CheckAndReinitAnimInstance(const UAnimInstan
 
 		USkeletalMeshComponent* MeshComp = InAnimInstance->GetSkelMeshComponent();
 
-		//延迟一帧避免PreUpdate检测的报错
-		MeshComp->GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(MeshComp, [=]()
-			{
-				// Need an instance to run, so create it now
-				// We use the tag to name the object, but as we verify there are no duplicates in the compiler we
-				// dont need to verify it is unique here.
-				UAnimInstance*& CachedAnimInstance = DynamicInstanceMap.FindOrAdd(DynamicInstanceClass);
-				if (CachedAnimInstance == nullptr)
-				{
-					CachedAnimInstance = NewObject<UAnimInstance>(MeshComp, DynamicInstanceClass);
-					// Initialize the new instance
-					CachedAnimInstance->InitializeAnimation();
-				}
-				InstanceToRun = CachedAnimInstance;
+		// Need an instance to run, so create it now
+		// We use the tag to name the object, but as we verify there are no duplicates in the compiler we
+		// dont need to verify it is unique here.
+		UAnimInstance*& CachedAnimInstance = DynamicInstanceMap.FindOrAdd(DynamicInstanceClass);
+		if (CachedAnimInstance == nullptr)
+		{
+			CachedAnimInstance = NewObject<UAnimInstance>(MeshComp, DynamicInstanceClass);
+			// Initialize the new instance
+			CachedAnimInstance->InitializeAnimation();
+		}
+		InstanceToRun = CachedAnimInstance;
 
-				if (PreInstance)
-				{
-					MeshComp->SubInstances.Remove(InstanceToRun);
-				}
-				MeshComp->SubInstances.Add(InstanceToRun);
-			}));
+		if (PreInstance)
+		{
+			MeshComp->SubInstances.Remove(InstanceToRun);
+		}
+		MeshComp->SubInstances.Add(InstanceToRun);
+	}
+}
+
+void FAnimNode_SubInstance_Dynamic::Initialize_AnyThread(const FAnimationInitializeContext& Context)
+{
+	Super::Initialize_AnyThread(Context);
+	GetEvaluateGraphExposedInputs().Execute(Context);
+}
+
+namespace ProxySkeletonRob
+{
+	template<typename Tag>
+	struct result {
+		/* export it ... */
+		typedef typename Tag::type type;
+		static type ptr;
+	};
+
+	template<typename Tag>
+	typename result<Tag>::type result<Tag>::ptr;
+
+	template<typename Tag, typename Tag::type p>
+	struct rob : result<Tag> {
+		/* fill it ... */
+		struct filler {
+			filler() { result<Tag>::ptr = p; }
+		};
+		static filler filler_obj;
+	};
+	template<typename Tag, typename Tag::type p>
+	typename rob<Tag, p>::filler rob<Tag, p>::filler_obj;
+
+	struct ProxySkeleton { typedef USkeleton* FAnimInstanceProxy::*type; };
+	template struct rob<ProxySkeleton, &FAnimInstanceProxy::Skeleton>;
+
+	USkeleton* GetSkeleton(FAnimInstanceProxy& Proxy)
+	{
+		return Proxy.*result<ProxySkeleton>().ptr;
 	}
 }
 
 void FAnimNode_SubInstance_Dynamic::Update_AnyThread(const FAnimationUpdateContext& Context)
 {
-	Super::Update_AnyThread(Context);
+	struct UAnimInstanceProxyRob : public UAnimInstance
+	{
+		inline static FAnimInstanceProxy& Get(UAnimInstance* Instance)
+		{
+			return static_cast<UAnimInstanceProxyRob*>(Instance)->GetProxyOnAnyThread<FAnimInstanceProxy>();
+		}
+	};
+
+	FAnimInstanceProxy& Proxy = UAnimInstanceProxyRob::Get(InstanceToRun);
+	//Sequence播放时Proxy中的Skeleton可能为空，需要判断下
+	if (InstanceToRun && ProxySkeletonRob::GetSkeleton(Proxy))
+	{
+		Super::Update_AnyThread(Context);
+	}
+	else
+	{
+		InPose.Update(Context);
+		GetEvaluateGraphExposedInputs().Execute(Context);
+	}
 }
 
 void FAnimNode_SubInstance_Dynamic::OnInitializeAnimInstance(const FAnimInstanceProxy* InProxy, const UAnimInstance* InAnimInstance)
