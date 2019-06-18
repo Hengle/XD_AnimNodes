@@ -98,10 +98,9 @@ void FAnimNode_SubInstance_Dynamic::Update_AnyThread(const FAnimationUpdateConte
 		}
 	};
 
-	FAnimInstanceProxy& Proxy = UAnimInstanceProxyRob::Get(InstanceToRun);
-	//Sequence播放时Proxy中的Skeleton可能为空，需要判断下
-	if (InstanceToRun && ProxySkeletonRob::GetSkeleton(Proxy))
+	if (InstanceToRun && ProxySkeletonRob::GetSkeleton(UAnimInstanceProxyRob::Get(InstanceToRun)))
 	{
+		//Sequence播放时Proxy中的Skeleton可能为空，需要判断下
 		Super::Update_AnyThread(Context);
 	}
 	else
