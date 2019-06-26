@@ -3,6 +3,7 @@
 
 #include "AnimNode_SubInstance_Dynamic.h"
 #include "AnimInstanceProxy.h"
+#include "AnimationRuntime.h"
 
 bool FAnimNode_SubInstance_Dynamic::HasPreUpdate() const
 {
@@ -24,11 +25,10 @@ void FAnimNode_SubInstance_Dynamic::CheckAndReinitAnimInstance(const UAnimInstan
 
 	check(DynamicInstanceClass->IsChildOf(InstanceClass));
 
+	USkeletalMeshComponent* MeshComp = InAnimInstance->GetSkelMeshComponent();
 	if (InstanceToRun == nullptr || InstanceToRun->GetClass() != DynamicInstanceClass)
 	{
 		UAnimInstance* PreInstance = InstanceToRun;
-
-		USkeletalMeshComponent* MeshComp = InAnimInstance->GetSkelMeshComponent();
 
 		// Need an instance to run, so create it now
 		// We use the tag to name the object, but as we verify there are no duplicates in the compiler we
@@ -42,11 +42,32 @@ void FAnimNode_SubInstance_Dynamic::CheckAndReinitAnimInstance(const UAnimInstan
 		}
 		InstanceToRun = CachedAnimInstance;
 
-		if (PreInstance)
+		check(!BlendDatas.ContainsByPredicate([&](const FBlendData& Data) {return Data.AnimInstance == PreInstance; }));
+
+		if (BlendTime > 0.f)
 		{
-			MeshComp->SubInstances.Remove(InstanceToRun);
+			if (PreInstance)
+			{
+				FBlendData BlendData;
+				BlendData.AnimInstance = PreInstance;
+				BlendData.BlendTime = BlendTime;
+				BlendDatas.Add(BlendData);
+			}
+			BlendDatas.RemoveAll([&](const FBlendData& Data) {return Data.AnimInstance == InstanceToRun; });
 		}
-		MeshComp->SubInstances.Add(InstanceToRun);
+		MeshComp->SubInstances.AddUnique(InstanceToRun);
+	}
+
+	if (BlendDatas.Num() > 0)
+	{
+		for (const FBlendData& BlendData : BlendDatas)
+		{
+			if (BlendData.Alpha <= 0.f)
+			{
+				MeshComp->SubInstances.Remove(BlendData.AnimInstance);
+			}
+		}
+		BlendDatas.RemoveAll([&](const FBlendData& Data) {return Data.Alpha <= 0.f; });
 	}
 }
 
@@ -98,15 +119,109 @@ void FAnimNode_SubInstance_Dynamic::Update_AnyThread(const FAnimationUpdateConte
 		}
 	};
 
+	//Sequence播放时Proxy中的Skeleton可能为空，需要判断下
 	if (InstanceToRun && ProxySkeletonRob::GetSkeleton(UAnimInstanceProxyRob::Get(InstanceToRun)))
 	{
-		//Sequence播放时Proxy中的Skeleton可能为空，需要判断下
 		Super::Update_AnyThread(Context);
 	}
 	else
 	{
 		InPose.Update(Context);
 		GetEvaluateGraphExposedInputs().Execute(Context);
+	}
+
+	//混合中的子动画实例也同步下
+	for (FBlendData& Data : BlendDatas)
+	{
+		// First copy properties
+		check(InstanceProperties.Num() == SubInstanceProperties.Num());
+		for (int32 PropIdx = 0; PropIdx < InstanceProperties.Num(); ++PropIdx)
+		{
+			UProperty* CallerProperty = InstanceProperties[PropIdx];
+			UProperty* SubProperty = SubInstanceProperties[PropIdx];
+
+			check(CallerProperty && SubProperty);
+
+#if WITH_EDITOR
+			if (ensure(CallerProperty->SameType(SubProperty)))
+#endif
+			{
+				uint8* SrcPtr = CallerProperty->ContainerPtrToValuePtr<uint8>(Context.AnimInstanceProxy->GetAnimInstanceObject());
+				uint8* DestPtr = SubProperty->ContainerPtrToValuePtr<uint8>(InstanceToRun);
+
+				CallerProperty->CopyCompleteValue(DestPtr, SrcPtr);
+			}
+		}
+
+		if (Data.AnimInstance->bNeedsUpdate)
+		{
+			struct FUpdateAnimationRob : public FAnimInstanceProxy
+			{
+				inline static void TryUpdateAnimation(FAnimInstanceProxy& Proxy)
+				{
+					static_cast<FUpdateAnimationRob&>(Proxy).UpdateAnimation();
+				}
+			};
+
+			FAnimInstanceProxy& Proxy = UAnimInstanceProxyRob::Get(Data.AnimInstance);
+			FUpdateAnimationRob::TryUpdateAnimation(Proxy);
+		}
+
+		Data.Alpha -= Context.GetDeltaTime() / Data.BlendTime;
+	}
+}
+
+void FAnimNode_SubInstance_Dynamic::Evaluate_AnyThread(FPoseContext& Output)
+{
+	TArray<int32> ValidBlendPose;
+	ValidBlendPose.Reset(BlendDatas.Num());
+	for (int32 i = 0; i < BlendDatas.Num(); ++i)
+	{
+		if (BlendDatas[i].Alpha > 0.f)
+		{
+			ValidBlendPose.Add(i);
+		}
+	}
+
+	int32 NumPoses = ValidBlendPose.Num() + 1;
+	if (NumPoses > 1)
+	{
+		TArray<float> BlendWeights;
+		BlendWeights.SetNum(NumPoses);
+		const int32 ActiveInstanceIdx = NumPoses - 1;
+		BlendWeights[ActiveInstanceIdx] = 0.f;
+
+		TArray<FCompactPose, TInlineAllocator<8>> FilteredPoses;
+		TArray<FBlendedCurve, TInlineAllocator<8>> FilteredCurve;
+		FilteredPoses.SetNum(NumPoses, false);
+		FilteredCurve.SetNum(NumPoses, false);
+
+		for (int32 i = 0; i < ValidBlendPose.Num(); ++i)
+		{
+			const FBlendData& BlendData = BlendDatas[ValidBlendPose[i]];
+
+			FPoseContext EvaluateContext(Output);
+
+			EvaluateSingleSubInstance(BlendData.AnimInstance, EvaluateContext);
+
+			FilteredPoses[i].MoveBonesFrom(EvaluateContext.Pose);
+			FilteredCurve[i].MoveFrom(EvaluateContext.Curve);
+			BlendWeights[i] = BlendData.Alpha / ValidBlendPose.Num();
+			BlendWeights[ActiveInstanceIdx] += (1.f - BlendData.Alpha) / ValidBlendPose.Num();
+		}
+
+		{
+			FPoseContext EvaluateContext(Output);
+			EvaluateSingleSubInstance(InstanceToRun, EvaluateContext);
+			FilteredPoses[ActiveInstanceIdx].MoveBonesFrom(EvaluateContext.Pose);
+			FilteredCurve[ActiveInstanceIdx].MoveFrom(EvaluateContext.Curve);
+		}
+
+		FAnimationRuntime::BlendPosesTogether(FilteredPoses, FilteredCurve, BlendWeights, Output.Pose, Output.Curve);
+	}
+	else
+	{
+		Super::Evaluate_AnyThread(Output);
 	}
 }
 
@@ -156,4 +271,12 @@ void FAnimNode_SubInstance_Dynamic::OnInitializeAnimInstance(const FAnimInstance
 		// We have an instance but no instance class
 		TeardownInstance();
 	}
+}
+
+void FAnimNode_SubInstance_Dynamic::EvaluateSingleSubInstance(UAnimInstance* SubAnimInstance, FPoseContext& Output)
+{
+	UAnimInstance* CacheInstanceToRun = InstanceToRun;
+	InstanceToRun = SubAnimInstance;
+	Super::Evaluate_AnyThread(Output);
+	InstanceToRun = CacheInstanceToRun;
 }

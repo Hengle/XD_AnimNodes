@@ -25,10 +25,26 @@ public:
 	bool HasPreUpdate() const override;
 	void PreUpdate(const UAnimInstance* InAnimInstance) override;
 
+	struct FBlendData
+	{
+		UAnimInstance* AnimInstance;
+		float BlendTime;
+		float Alpha = 1.f;
+	};
+
+	UPROPERTY(EditAnywhere, Category = "Settings")
+	float BlendTime = 0.2f;
+
+	TArray<FBlendData> BlendDatas;
+
 	void CheckAndReinitAnimInstance(const UAnimInstance* InAnimInstance);
 
 	void Initialize_AnyThread(const FAnimationInitializeContext& Context) override;
 	void Update_AnyThread(const FAnimationUpdateContext& Context) override;
+	void Evaluate_AnyThread(FPoseContext& Output) override;
 
 	void OnInitializeAnimInstance(const FAnimInstanceProxy* InProxy, const UAnimInstance* InAnimInstance) override;
+
+private:
+	void EvaluateSingleSubInstance(UAnimInstance* SubAnimInstance, FPoseContext& Output);
 };
