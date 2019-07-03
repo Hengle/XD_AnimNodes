@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
 #include "CustomSkeletonConfig.generated.h"
 
 /**
@@ -33,15 +34,15 @@ public:
 
 private:
 	UPROPERTY(EditAnywhere, Category = "角色定制")
-	uint8 Value;
+	float Value;
 public:
 	void SetValue(float InValue, float MinValue, float MaxValue)
 	{
-		Value = FMath::GetMappedRangeValueUnclamped({ MinValue, MaxValue }, { 0.f, 255.f }, InValue);
+		Value = InValue;
 	}
 	float GetValue(float MinValue, float MaxValue) const
 	{
-		return FMath::GetMappedRangeValueUnclamped({ 0.f, 255.f }, { MinValue, MaxValue }, Value);
+		return Value;
 	}
 };
 
@@ -93,4 +94,16 @@ public:
 
 	float GetCustomSkeletonValue(int32 Idx) const;
 	void SetCustomSkeletonValue(int32 Idx, float InValue);
+};
+
+UCLASS()
+class XD_ANIMNODES_API UCustomCharacterFunctionLibrary : public UBlueprintFunctionLibrary
+{
+	GENERATED_BODY()
+public:
+	UFUNCTION(BlueprintPure, Category = "角色|定制")
+	static float GetCustomSkeletonValue(const FCustomCharacterRuntimeData& Data, int32 Idx) { return Data.GetCustomSkeletonValue(Idx); }
+
+	UFUNCTION(BlueprintCallable, Category = "角色|定制")
+	static void SetCustomSkeletonValue(UPARAM(Ref)FCustomCharacterRuntimeData& Data, int32 Idx, float InValue) { Data.SetCustomSkeletonValue(Idx, InValue); }
 };
