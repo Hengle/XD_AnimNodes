@@ -43,8 +43,12 @@ public class XD_AnimNodes_Editor : ModuleRules
                 "AnimGraph",
                 "AnimGraphRuntime",
                 "RHI",
+                "InputCore",
 
                 "XD_AnimNodes",
+
+                "XD_UnrealLibraryEx",
+                "XD_UnrealLibraryEx_Editor",
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
