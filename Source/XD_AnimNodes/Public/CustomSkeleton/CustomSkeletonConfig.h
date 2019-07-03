@@ -20,7 +20,8 @@ enum class ECustomSkeletonMode
 	Roll,
 	ScaleX,
 	ScaleY,
-	ScaleZ
+	ScaleZ,
+	ScaleXYZ
 };
 
 USTRUCT()
@@ -56,9 +57,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "骨架定制")
 	ECustomSkeletonMode Mode;
 	UPROPERTY(EditAnywhere, Category = "骨架定制")
-	float MaxValue;
+	float MaxValue = 1.f;
 	UPROPERTY(EditAnywhere, Category = "骨架定制")
-	float MinValue;
+	float MinValue = -1.f;
 	UPROPERTY(EditAnywhere, Category = "骨架定制")
 	float DefalutValue;
 
@@ -76,7 +77,7 @@ class XD_ANIMNODES_API UCustomCharacterConfig : public UDataAsset
 	GENERATED_BODY()
 public:
 	UPROPERTY(EditAnywhere, Category = "骨架定制")
-	TArray<FCustomSkeletonEntry> Data;
+	TArray<FCustomSkeletonEntry> SkeletonData;
 };
 
 USTRUCT(BlueprintType)

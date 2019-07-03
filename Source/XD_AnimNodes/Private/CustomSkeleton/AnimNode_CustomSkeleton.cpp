@@ -14,6 +14,11 @@ void FAnimNode_CustomSkeleton::EvaluateSkeletalControl_AnyThread(FComponentSpace
 	// if you'd like to translate first, you'll need two nodes that first node does translate and second nodes to rotate.
 	const FBoneContainer& BoneContainer = Output.Pose.GetPose().GetBoneContainer();
 
+	if (CustomCharacterRuntimeData.CustomSkeletonValues.Num() != CustomBoneDatas.Num())
+	{
+		return;
+	}
+
 	for (const FCustomSkeletonRuntimeEntry& Entry : CustomBoneDatas)
 	{
 		if (Entry.BoneReference.IsValidToEvaluate(BoneContainer))
@@ -26,17 +31,17 @@ void FAnimNode_CustomSkeleton::EvaluateSkeletalControl_AnyThread(FComponentSpace
 			FAnimationRuntime::ConvertCSTransformToBoneSpace(ComponentTransform, Output.Pose, NewBoneTM, CompactPoseBoneToModify, EBoneControlSpace::BCS_BoneSpace);
 			if (Entry.ScaleModifies.Num() > 0)
 			{
-				FVector Scale{ FVector::OneVector };
+				FVector Scale{ FVector::ZeroVector };
 				for (const auto& Data : Entry.ScaleModifies)
 				{
 					Scale[Data.Key] = CustomCharacterRuntimeData.GetCustomSkeletonValue(Data.Value);
 				}
-				NewBoneTM.SetScale3D(NewBoneTM.GetScale3D() * Scale);
+				NewBoneTM.SetScale3D(NewBoneTM.GetScale3D() + Scale);
 			}
 
 			if (Entry.RotationModifies.Num() > 0)
 			{
-				FVector Rotation;
+				FVector Rotation{ FVector::ZeroVector };
 				for (const auto& Data : Entry.RotationModifies)
 				{
 					Rotation[Data.Key] = CustomCharacterRuntimeData.GetCustomSkeletonValue(Data.Value);
@@ -46,7 +51,7 @@ void FAnimNode_CustomSkeleton::EvaluateSkeletalControl_AnyThread(FComponentSpace
 
 			if (Entry.OffsetModifies.Num() > 0)
 			{
-				FVector Offset;
+				FVector Offset{ FVector::ZeroVector };
 				for (const auto& Data : Entry.OffsetModifies)
 				{
 					Offset[Data.Key] = CustomCharacterRuntimeData.GetCustomSkeletonValue(Data.Value);
@@ -69,11 +74,22 @@ bool FAnimNode_CustomSkeleton::IsValidToEvaluate(const USkeleton* Skeleton, cons
 
 void FAnimNode_CustomSkeleton::InitializeBoneReferences(const FBoneContainer& RequiredBones)
 {
-	CustomBoneDatas.Empty();
-
-	for (int32 Idx = 0; Idx < CustomCharacterRuntimeData.CustomConfig->Data.Num(); ++Idx)
+	if (!CustomCharacterRuntimeData.CustomConfig)
 	{
-		const FCustomSkeletonEntry& CustomSkeletonEntry = CustomCharacterRuntimeData.CustomConfig->Data[Idx];
+		return;
+	}
+
+	if (CachedConfig.Get() == CustomCharacterRuntimeData.CustomConfig)
+	{
+		return;
+	}
+
+	CustomBoneDatas.Empty();
+	CachedConfig = CustomCharacterRuntimeData.CustomConfig;
+
+	for (int32 Idx = 0; Idx < CustomCharacterRuntimeData.CustomConfig->SkeletonData.Num(); ++Idx)
+	{
+		const FCustomSkeletonEntry& CustomSkeletonEntry = CustomCharacterRuntimeData.CustomConfig->SkeletonData[Idx];
 		int32 Index = CustomBoneDatas.IndexOfByPredicate([&](const FCustomSkeletonRuntimeEntry& E) {return E.BoneReference.BoneName == CustomSkeletonEntry.BoneName; });
 		if (Index == INDEX_NONE)
 		{
@@ -83,6 +99,10 @@ void FAnimNode_CustomSkeleton::InitializeBoneReferences(const FBoneContainer& Re
 				FCustomSkeletonRuntimeEntry CustomSkeletonRuntimeEntry;
 				CustomSkeletonRuntimeEntry.BoneReference = BoneReferences;
 				Index = CustomBoneDatas.Add(CustomSkeletonRuntimeEntry);
+			}
+			else
+			{
+				continue;
 			}
 		}
 		FCustomSkeletonRuntimeEntry& Entry = CustomBoneDatas[Index];
@@ -98,15 +118,6 @@ void FAnimNode_CustomSkeleton::InitializeBoneReferences(const FBoneContainer& Re
 		case ECustomSkeletonMode::OffsetZ:
 			Entry.OffsetModifies.Add({ 2, Idx });
 			break;
-		case ECustomSkeletonMode::ScaleX:
-			Entry.ScaleModifies.Add({ 0, Idx });
-			break;
-		case ECustomSkeletonMode::ScaleY:
-			Entry.ScaleModifies.Add({ 1, Idx });
-			break;
-		case ECustomSkeletonMode::ScaleZ:
-			Entry.ScaleModifies.Add({ 2, Idx });
-			break;
 		case ECustomSkeletonMode::Pitch:
 			Entry.ScaleModifies.Add({ 0, Idx });
 			break;
@@ -116,6 +127,25 @@ void FAnimNode_CustomSkeleton::InitializeBoneReferences(const FBoneContainer& Re
 		case ECustomSkeletonMode::Roll:
 			Entry.ScaleModifies.Add({ 2, Idx });
 			break;
+		case ECustomSkeletonMode::ScaleX:
+			Entry.ScaleModifies.Add({ 0, Idx });
+			break;
+		case ECustomSkeletonMode::ScaleY:
+			Entry.ScaleModifies.Add({ 1, Idx });
+			break;
+		case ECustomSkeletonMode::ScaleZ:
+			Entry.ScaleModifies.Add({ 2, Idx });
+			break;
+		case ECustomSkeletonMode::ScaleXYZ:
+			Entry.ScaleModifies.Add({ 0, Idx });
+			Entry.ScaleModifies.Add({ 1, Idx });
+			Entry.ScaleModifies.Add({ 2, Idx });
+			break;
 		}
 	}
+
+	CustomBoneDatas.Sort([&](const FCustomSkeletonRuntimeEntry& LHS, const FCustomSkeletonRuntimeEntry& RHS)
+		{
+			return LHS.BoneReference.BoneIndex < RHS.BoneReference.BoneIndex;
+		});
 }

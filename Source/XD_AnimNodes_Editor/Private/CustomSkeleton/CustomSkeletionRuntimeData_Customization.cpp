@@ -13,6 +13,13 @@ void FCustomSkeletionRuntimeData_Customization::CustomizeHeader(TSharedRef<class
 {
 	TSharedPtr<IPropertyHandle> CustomConfig_PropertyHandle = FPropertyCustomizeHelper::GetPropertyHandleByName(StructPropertyHandle, GET_MEMBER_NAME_STRING_CHECKED(FCustomCharacterRuntimeData, CustomConfig));
 
+	FCustomCharacterRuntimeData CustomCharacterRuntimeData = FPropertyCustomizeHelper::GetValue<FCustomCharacterRuntimeData>(StructPropertyHandle);
+	if (CustomCharacterRuntimeData.CustomConfig)
+	{
+		CustomCharacterRuntimeData.CustomSkeletonValues.SetNumZeroed(CustomCharacterRuntimeData.CustomConfig->SkeletonData.Num());
+	}
+	FPropertyCustomizeHelper::SetValue(StructPropertyHandle, CustomCharacterRuntimeData, false);
+
 	if (CustomConfig_PropertyHandle)
 	{
 		CustomConfig_PropertyHandle->SetOnPropertyValueChanged(FSimpleDelegate::CreateLambda([StructPropertyHandle]()
@@ -20,7 +27,7 @@ void FCustomSkeletionRuntimeData_Customization::CustomizeHeader(TSharedRef<class
 				FCustomCharacterRuntimeData CustomSkeletionRuntimeData = FPropertyCustomizeHelper::GetValue<FCustomCharacterRuntimeData>(StructPropertyHandle);
 				if (CustomSkeletionRuntimeData.CustomConfig)
 				{
-					TArray<FCustomSkeletonEntry>& Data = CustomSkeletionRuntimeData.CustomConfig->Data;
+					TArray<FCustomSkeletonEntry>& Data = CustomSkeletionRuntimeData.CustomConfig->SkeletonData;
 					int32 Length = Data.Num();
 					CustomSkeletionRuntimeData.CustomSkeletonValues.SetNum(Length);
 					for (int32 Idx = 0; Idx < Length; ++Idx)
@@ -46,7 +53,6 @@ void FCustomSkeletionRuntimeData_Customization::CustomizeHeader(TSharedRef<class
 	}
 	else
 	{
-		FCustomCharacterRuntimeData CustomSkeletionRuntimeData = FPropertyCustomizeHelper::GetValue<FCustomCharacterRuntimeData>(StructPropertyHandle);
 		HeaderRow.NameContent()
 			[
 				SNew(STextBlock)
@@ -55,7 +61,7 @@ void FCustomSkeletionRuntimeData_Customization::CustomizeHeader(TSharedRef<class
 			.ValueContent()
 			[
 				SNew(STextBlock)
-					.Text(FText::FromName(CustomSkeletionRuntimeData.CustomConfig ? CustomSkeletionRuntimeData.CustomConfig->GetFName() : NAME_None))
+					.Text(FText::FromName(CustomCharacterRuntimeData.CustomConfig ? CustomCharacterRuntimeData.CustomConfig->GetFName() : NAME_None))
 			];
 	}
 }
@@ -65,7 +71,7 @@ void FCustomSkeletionRuntimeData_Customization::CustomizeChildren(TSharedRef<cla
 	FCustomCharacterRuntimeData CustomSkeletionRuntimeData = FPropertyCustomizeHelper::GetValue<FCustomCharacterRuntimeData>(StructPropertyHandle);
 	if (CustomSkeletionRuntimeData.CustomConfig)
 	{
-		TArray<FCustomSkeletonEntry>& Data = CustomSkeletionRuntimeData.CustomConfig->Data;
+		TArray<FCustomSkeletonEntry>& Data = CustomSkeletionRuntimeData.CustomConfig->SkeletonData;
 		for (int32 Idx = 0; Idx < Data.Num(); ++Idx)
 		{
 			const FCustomSkeletonEntry& Entry = Data[Idx];
@@ -77,10 +83,10 @@ void FCustomSkeletionRuntimeData_Customization::CustomizeChildren(TSharedRef<cla
 			.ValueContent()
 				[
 					SNew(SNumericEntryBox<float>)
-						.MinValue(0.f)
-						.MinSliderValue(0.f)
-						.MaxValue(1.f)
-						.MaxSliderValue(1.f)
+						.MinValue(Entry.MinValue)
+						.MinSliderValue(Entry.MinValue)
+						.MaxValue(Entry.MaxValue)
+						.MaxSliderValue(Entry.MaxValue)
 						.AllowSpin(true)
 						.Value_Lambda([=]()
 							{

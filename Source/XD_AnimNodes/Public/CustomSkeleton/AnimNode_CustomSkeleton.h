@@ -29,6 +29,8 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Settings", meta = (PinShownByDefault))
 	FCustomCharacterRuntimeData CustomCharacterRuntimeData;
 
+	TWeakObjectPtr<UCustomCharacterConfig> CachedConfig;
+
 	void EvaluateSkeletalControl_AnyThread(FComponentSpacePoseContext& Output, TArray<FBoneTransform>& OutBoneTransforms) override;
 	bool IsValidToEvaluate(const USkeleton* Skeleton, const FBoneContainer& RequiredBones) override;
 
