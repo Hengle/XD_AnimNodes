@@ -32,6 +32,7 @@ public:
 	TWeakObjectPtr<UCustomCharacterConfig> CachedConfig;
 
 	void EvaluateSkeletalControl_AnyThread(FComponentSpacePoseContext& Output, TArray<FBoneTransform>& OutBoneTransforms) override;
+	void CacheBones_AnyThread(const FAnimationCacheBonesContext& Context) override;
 	bool IsValidToEvaluate(const USkeleton* Skeleton, const FBoneContainer& RequiredBones) override;
 
 	void InitializeBoneReferences(const FBoneContainer& RequiredBones) override;

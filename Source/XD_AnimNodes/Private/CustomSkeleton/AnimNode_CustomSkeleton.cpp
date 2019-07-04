@@ -67,6 +67,12 @@ void FAnimNode_CustomSkeleton::EvaluateSkeletalControl_AnyThread(FComponentSpace
 	}
 }
 
+void FAnimNode_CustomSkeleton::CacheBones_AnyThread(const FAnimationCacheBonesContext& Context)
+{
+	GetEvaluateGraphExposedInputs().Execute(Context);
+	Super::CacheBones_AnyThread(Context);
+}
+
 bool FAnimNode_CustomSkeleton::IsValidToEvaluate(const USkeleton* Skeleton, const FBoneContainer& RequiredBones)
 {
 	return true;
