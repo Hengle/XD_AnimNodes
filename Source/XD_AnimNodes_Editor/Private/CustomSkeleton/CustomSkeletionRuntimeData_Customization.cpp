@@ -79,6 +79,7 @@ void FCustomSkeletionRuntimeData_Customization::CustomizeChildren(TSharedRef<cla
 				[
 					SNew(STextBlock)
 						.Text(Entry.DisplayName)
+						.ToolTipText(FText::FromName(Entry.BoneName))
 				]
 			.ValueContent()
 				[
