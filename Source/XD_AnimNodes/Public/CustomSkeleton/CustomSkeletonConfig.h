@@ -72,6 +72,32 @@ public:
 	}
 };
 
+UENUM()
+enum class ECustomMorphType
+{
+	Body,
+	Head
+};
+
+USTRUCT(BlueprintInternalUseOnly)
+struct XD_ANIMNODES_API FCustomMorphEntry
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere, Category = "混合变形定制")
+	FText DisplayName;
+	UPROPERTY(EditAnywhere, Category = "混合变形定制")
+	FName MorphTargetName;
+	UPROPERTY(EditAnywhere, Category = "混合变形定制")
+	ECustomMorphType MorphType = ECustomMorphType::Head;
+	UPROPERTY(EditAnywhere, Category = "混合变形定制")
+	float MaxValue = 1.f;
+	UPROPERTY(EditAnywhere, Category = "混合变形定制")
+	float MinValue = -1.f;
+	UPROPERTY(EditAnywhere, Category = "混合变形定制")
+	float DefalutValue;
+};
+
 UCLASS()
 class XD_ANIMNODES_API UCustomCharacterConfig : public UDataAsset
 {
@@ -79,6 +105,9 @@ class XD_ANIMNODES_API UCustomCharacterConfig : public UDataAsset
 public:
 	UPROPERTY(EditAnywhere, Category = "骨架定制")
 	TArray<FCustomSkeletonEntry> SkeletonData;
+
+	UPROPERTY(EditAnywhere, Category = "骨架定制")
+	TArray<FCustomMorphEntry> MorphData;
 };
 
 USTRUCT(BlueprintType)
@@ -92,8 +121,14 @@ public:
 	UPROPERTY(EditAnywhere, Category = "骨架定制")
 	TArray<FCustomCharacterRuntimeEntry> CustomSkeletonValues;
 
+	UPROPERTY(EditAnywhere, Category = "骨架定制")
+	TArray<FCustomCharacterRuntimeEntry> CustomMorphValues;
+
 	float GetCustomSkeletonValue(int32 Idx) const;
 	void SetCustomSkeletonValue(int32 Idx, float InValue);
+
+	float GetCustomMorphValue(int32 Idx) const;
+	void SetCustomMorphValue(int32 Idx, float InValue);
 };
 
 UCLASS()

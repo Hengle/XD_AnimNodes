@@ -71,10 +71,10 @@ void FCustomSkeletionRuntimeData_Customization::CustomizeChildren(TSharedRef<cla
 	FCustomCharacterRuntimeData CustomSkeletionRuntimeData = FPropertyCustomizeHelper::GetValue<FCustomCharacterRuntimeData>(StructPropertyHandle);
 	if (CustomSkeletionRuntimeData.CustomConfig)
 	{
-		TArray<FCustomSkeletonEntry>& Data = CustomSkeletionRuntimeData.CustomConfig->SkeletonData;
-		for (int32 Idx = 0; Idx < Data.Num(); ++Idx)
+		TArray<FCustomSkeletonEntry>& SkeletonData = CustomSkeletionRuntimeData.CustomConfig->SkeletonData;
+		for (int32 Idx = 0; Idx < SkeletonData.Num(); ++Idx)
 		{
-			const FCustomSkeletonEntry& Entry = Data[Idx];
+			const FCustomSkeletonEntry& Entry = SkeletonData[Idx];
 			StructBuilder.AddCustomRow(Entry.DisplayName).NameContent()
 				[
 					SNew(STextBlock)
@@ -115,6 +115,55 @@ void FCustomSkeletionRuntimeData_Customization::CustomizeChildren(TSharedRef<cla
 							{
 								FCustomCharacterRuntimeData CustomSkeletionRuntimeData = FPropertyCustomizeHelper::GetValue<FCustomCharacterRuntimeData>(StructPropertyHandle);
 								CustomSkeletionRuntimeData.SetCustomSkeletonValue(Idx, NewValue);
+								FPropertyCustomizeHelper::SetValue(StructPropertyHandle, CustomSkeletionRuntimeData);
+							})
+				];
+		}
+
+		TArray<FCustomMorphEntry>& MorphData = CustomSkeletionRuntimeData.CustomConfig->MorphData;
+		for (int32 Idx = 0; Idx < MorphData.Num(); ++Idx)
+		{
+			const FCustomMorphEntry& Entry = MorphData[Idx];
+			StructBuilder.AddCustomRow(Entry.DisplayName).NameContent()
+				[
+					SNew(STextBlock)
+					.Text(Entry.DisplayName)
+				.ToolTipText(FText::FromName(Entry.MorphTargetName))
+				]
+			.ValueContent()
+				[
+					SNew(SNumericEntryBox<float>)
+					.MinValue(Entry.MinValue)
+				.MinSliderValue(Entry.MinValue)
+				.MaxValue(Entry.MaxValue)
+				.MaxSliderValue(Entry.MaxValue)
+				.AllowSpin(true)
+				.Value_Lambda([=]()
+					{
+						FCustomCharacterRuntimeData CustomSkeletionRuntimeData = FPropertyCustomizeHelper::GetValue<FCustomCharacterRuntimeData>(StructPropertyHandle);
+						if (Idx < CustomSkeletionRuntimeData.CustomMorphValues.Num())
+						{
+							return CustomSkeletionRuntimeData.GetCustomMorphValue(Idx);
+						}
+						else
+						{
+							return 0.f;
+						}
+					})
+				.OnValueChanged_Lambda([=](float NewValue)
+					{
+						if (FCustomCharacterRuntimeData* Value = FPropertyCustomizeHelper::Value<FCustomCharacterRuntimeData>(StructPropertyHandle))
+						{
+							if (Idx < Value->CustomSkeletonValues.Num())
+							{
+								Value->SetCustomMorphValue(Idx, NewValue);
+							}
+						}
+					})
+						.OnValueCommitted_Lambda([=](float NewValue, ETextCommit::Type CommitType)
+							{
+								FCustomCharacterRuntimeData CustomSkeletionRuntimeData = FPropertyCustomizeHelper::GetValue<FCustomCharacterRuntimeData>(StructPropertyHandle);
+								CustomSkeletionRuntimeData.SetCustomMorphValue(Idx, NewValue);
 								FPropertyCustomizeHelper::SetValue(StructPropertyHandle, CustomSkeletionRuntimeData);
 							})
 				];
