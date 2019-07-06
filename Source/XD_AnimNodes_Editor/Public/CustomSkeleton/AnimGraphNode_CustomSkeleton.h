@@ -5,14 +5,13 @@
 #include "CoreMinimal.h"
 #include "AnimGraphNode_Base.h"
 #include "AnimNode_CustomSkeleton.h"
-#include "AnimGraphNode_SkeletalControlBase.h"
 #include "AnimGraphNode_CustomSkeleton.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class XD_ANIMNODES_EDITOR_API UAnimGraphNode_CustomSkeleton : public UAnimGraphNode_SkeletalControlBase
+class XD_ANIMNODES_EDITOR_API UAnimGraphNode_CustomSkeleton : public UAnimGraphNode_Base
 {
 	GENERATED_BODY()
 public:
@@ -21,8 +20,8 @@ public:
 
  	//~ Begin UEdGraphNode Interface.
  	FText GetTooltipText() const override;
+	FLinearColor GetNodeTitleColor() const override;
  	FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
+	FString GetNodeCategory() const override;
  	//~ End UEdGraphNode Interface.
-
-	const FAnimNode_SkeletalControlBase* GetNode() const override { return &Node; }
 };

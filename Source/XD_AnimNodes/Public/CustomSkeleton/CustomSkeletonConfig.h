@@ -7,24 +7,11 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "CustomSkeletonConfig.generated.h"
 
+class USkeletalMeshComponent;
+
 /**
  * 
  */
-UENUM()
-enum class ECustomSkeletonMode
-{
-	OffsetX,
-	OffsetY,
-	OffsetZ,
-	Pitch,
-	Yaw,
-	Roll,
-	ScaleX,
-	ScaleY,
-	ScaleZ,
-	ScaleXYZ
-};
-
 USTRUCT()
 struct XD_ANIMNODES_API FCustomCharacterRuntimeEntry
 {
@@ -46,6 +33,29 @@ public:
 	}
 };
 
+UENUM()
+enum class ECustomSkeletonMode
+{
+	Offset,
+	Rotation,
+	Scale
+};
+
+USTRUCT(BlueprintInternalUseOnly)
+struct XD_ANIMNODES_API FCustomSkeletonBoneData
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere, Category = "骨架定制")
+	FName BoneName;
+
+	UPROPERTY(EditAnywhere, Category = "骨架定制")
+	ECustomSkeletonMode Mode;
+
+	UPROPERTY(EditAnywhere, Category = "骨架定制")
+	FVector ApplyAxis = FVector(0.f, 1.f, 0.f);
+};
+
 USTRUCT(BlueprintInternalUseOnly)
 struct XD_ANIMNODES_API FCustomSkeletonEntry
 {
@@ -54,15 +64,19 @@ public:
 	UPROPERTY(EditAnywhere, Category = "骨架定制")
 	FText DisplayName;
 	UPROPERTY(EditAnywhere, Category = "骨架定制")
-	FName BoneName;
+	FText Category;
 	UPROPERTY(EditAnywhere, Category = "骨架定制")
-	ECustomSkeletonMode Mode;
+	TArray<FCustomSkeletonBoneData> BoneDatas;
 	UPROPERTY(EditAnywhere, Category = "骨架定制")
 	float MaxValue = 1.f;
 	UPROPERTY(EditAnywhere, Category = "骨架定制")
 	float MinValue = -1.f;
 	UPROPERTY(EditAnywhere, Category = "骨架定制")
+	float Scale = 1.f;
+	UPROPERTY(EditAnywhere, Category = "骨架定制")
 	float DefalutValue;
+
+	FText GetBonesDesc() const;
 
 	FCustomCharacterRuntimeEntry ToRuntimeData() const
 	{
@@ -70,13 +84,6 @@ public:
 		Entry.SetValue(DefalutValue, MinValue, MaxValue);
 		return Entry;
 	}
-};
-
-UENUM()
-enum class ECustomMorphType
-{
-	Body,
-	Head
 };
 
 USTRUCT(BlueprintInternalUseOnly)
@@ -87,15 +94,17 @@ public:
 	UPROPERTY(EditAnywhere, Category = "混合变形定制")
 	FText DisplayName;
 	UPROPERTY(EditAnywhere, Category = "混合变形定制")
-	FName MorphTargetName;
+	FText Category;
 	UPROPERTY(EditAnywhere, Category = "混合变形定制")
-	ECustomMorphType MorphType = ECustomMorphType::Head;
+	TArray<FName> MorphTargetNames;
 	UPROPERTY(EditAnywhere, Category = "混合变形定制")
 	float MaxValue = 1.f;
 	UPROPERTY(EditAnywhere, Category = "混合变形定制")
 	float MinValue = -1.f;
 	UPROPERTY(EditAnywhere, Category = "混合变形定制")
 	float DefalutValue;
+
+	FText GetMorphsDesc() const;
 };
 
 UCLASS()
@@ -103,10 +112,10 @@ class XD_ANIMNODES_API UCustomCharacterConfig : public UDataAsset
 {
 	GENERATED_BODY()
 public:
-	UPROPERTY(EditAnywhere, Category = "骨架定制")
+	UPROPERTY(EditAnywhere, Category = "角色定制")
 	TArray<FCustomSkeletonEntry> SkeletonData;
 
-	UPROPERTY(EditAnywhere, Category = "骨架定制")
+	UPROPERTY(EditAnywhere, Category = "角色定制")
 	TArray<FCustomMorphEntry> MorphData;
 };
 
@@ -115,20 +124,23 @@ struct XD_ANIMNODES_API FCustomCharacterRuntimeData
 {
 	GENERATED_BODY()
 public:
-	UPROPERTY(EditDefaultsOnly, Category = "骨架定制")
+	UPROPERTY(EditDefaultsOnly, Category = "角色定制")
 	UCustomCharacterConfig* CustomConfig;
 
-	UPROPERTY(EditAnywhere, Category = "骨架定制")
+	UPROPERTY(EditAnywhere, Category = "角色定制")
 	TArray<FCustomCharacterRuntimeEntry> CustomSkeletonValues;
 
-	UPROPERTY(EditAnywhere, Category = "骨架定制")
+	UPROPERTY(EditAnywhere, Category = "角色定制")
 	TArray<FCustomCharacterRuntimeEntry> CustomMorphValues;
 
 	float GetCustomSkeletonValue(int32 Idx) const;
+	float GetCustomSkeletonValueScaled(int32 Idx) const;
 	void SetCustomSkeletonValue(int32 Idx, float InValue);
 
 	float GetCustomMorphValue(int32 Idx) const;
 	void SetCustomMorphValue(int32 Idx, float InValue);
+
+	void ApplyMorphTarget(USkeletalMeshComponent* SkeletalMeshComponent) const;
 };
 
 UCLASS()

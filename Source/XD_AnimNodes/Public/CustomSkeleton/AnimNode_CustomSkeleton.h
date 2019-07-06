@@ -3,15 +3,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AnimNode_SkeletalControlBase.h"
+#include "Animation/AnimNodeBase.h"
 #include "CustomSkeletonConfig.h"
 #include "AnimNode_CustomSkeleton.generated.h"
 
 /**
  * 
  */
-USTRUCT()
-struct XD_ANIMNODES_API FAnimNode_CustomSkeleton : public FAnimNode_SkeletalControlBase
+USTRUCT(BlueprintInternalUseOnly)
+struct XD_ANIMNODES_API FAnimNode_CustomSkeleton : public FAnimNode_Base
 {
 	GENERATED_BODY()
 public:
@@ -19,21 +19,21 @@ public:
 	{
 		FBoneReference BoneReference;
 
-		TArray<TKeyValuePair<int32, int32>> OffsetModifies;
-		TArray<TKeyValuePair<int32, int32>> RotationModifies;
-		TArray<TKeyValuePair<int32, int32>> ScaleModifies;
+		TArray<TKeyValuePair<FVector, int32>> OffsetModifies;
+		TArray<TKeyValuePair<FVector, int32>> RotationModifies;
+		TArray<TKeyValuePair<FVector, int32>> ScaleModifies;
 	};
 
 	TArray<FCustomSkeletonRuntimeEntry> CustomBoneDatas;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Links)
+	FPoseLink BasePose;
 
 	UPROPERTY(EditAnywhere, Category = "Settings", meta = (PinShownByDefault))
 	FCustomCharacterRuntimeData CustomCharacterRuntimeData;
 
 	TWeakObjectPtr<UCustomCharacterConfig> CachedConfig;
 
-	void EvaluateSkeletalControl_AnyThread(FComponentSpacePoseContext& Output, TArray<FBoneTransform>& OutBoneTransforms) override;
+	void Evaluate_AnyThread(FPoseContext& Output) override;
 	void CacheBones_AnyThread(const FAnimationCacheBonesContext& Context) override;
-	bool IsValidToEvaluate(const USkeleton* Skeleton, const FBoneContainer& RequiredBones) override;
-
-	void InitializeBoneReferences(const FBoneContainer& RequiredBones) override;
 };

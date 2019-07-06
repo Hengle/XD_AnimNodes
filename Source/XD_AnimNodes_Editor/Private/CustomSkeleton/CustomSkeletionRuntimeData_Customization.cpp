@@ -79,7 +79,7 @@ void FCustomSkeletionRuntimeData_Customization::CustomizeChildren(TSharedRef<cla
 				[
 					SNew(STextBlock)
 						.Text(Entry.DisplayName)
-						.ToolTipText(FText::FromName(Entry.BoneName))
+						.ToolTipText(Entry.GetBonesDesc())
 				]
 			.ValueContent()
 				[
@@ -128,7 +128,7 @@ void FCustomSkeletionRuntimeData_Customization::CustomizeChildren(TSharedRef<cla
 				[
 					SNew(STextBlock)
 					.Text(Entry.DisplayName)
-				.ToolTipText(FText::FromName(Entry.MorphTargetName))
+				.ToolTipText(Entry.GetMorphsDesc())
 				]
 			.ValueContent()
 				[
