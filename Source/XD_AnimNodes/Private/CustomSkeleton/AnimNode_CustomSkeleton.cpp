@@ -5,65 +5,15 @@
 #include "AnimationRuntime.h"
 #include "AnimInstanceProxy.h"
 
-void FAnimNode_CustomSkeleton::Evaluate_AnyThread(FPoseContext& Output)
+void FAnimNode_CustomSkeleton::Initialize_AnyThread(const FAnimationInitializeContext& Context)
 {
-	BasePose.Evaluate(Output);
-
-	if (CustomCharacterRuntimeData.CustomConfig && CustomCharacterRuntimeData.CustomSkeletonValues.Num() != CustomCharacterRuntimeData.CustomConfig->SkeletonData.Num())
-	{
-		return;
-	}
-
-	// the way we apply transform is same as FMatrix or FTransform
-	// we apply scale first, and rotation, and translation
-	// if you'd like to translate first, you'll need two nodes that first node does translate and second nodes to rotate.
-	const FBoneContainer& BoneContainer = Output.Pose.GetBoneContainer();
-
-	for (const FCustomSkeletonRuntimeEntry& Entry : CustomBoneDatas)
-	{
-		if (Entry.BoneReference.IsValidToEvaluate(BoneContainer))
-		{
-			FCompactPoseBoneIndex CompactPoseBoneToModify = Entry.BoneReference.GetCompactPoseIndex(BoneContainer);
-			FTransform& NewBoneTM = Output.Pose[CompactPoseBoneToModify];
-
-			if (Entry.ScaleModifies.Num() > 0)
-			{
-				FVector Scale{ FVector::ZeroVector };
-				for (const auto& Data : Entry.ScaleModifies)
-				{
-					Scale += Data.Key * CustomCharacterRuntimeData.GetCustomSkeletonValueScaled(Data.Value);
-				}
-				NewBoneTM.SetScale3D(NewBoneTM.GetScale3D() + Scale);
-			}
-
-			if (Entry.RotationModifies.Num() > 0)
-			{
-				FVector Rotation{ FVector::ZeroVector };
-				for (const auto& Data : Entry.RotationModifies)
-				{
-					Rotation += Data.Key * CustomCharacterRuntimeData.GetCustomSkeletonValueScaled(Data.Value);
-				}
-				NewBoneTM.SetRotation(FQuat(FRotator(Rotation.X, Rotation.Y, Rotation.Z)) * NewBoneTM.GetRotation());
-			}
-
-			if (Entry.OffsetModifies.Num() > 0)
-			{
-				FVector Offset{ FVector::ZeroVector };
-				for (const auto& Data : Entry.OffsetModifies)
-				{
-					Offset += Data.Key * CustomCharacterRuntimeData.GetCustomSkeletonValueScaled(Data.Value);
-				}
-				NewBoneTM.AddToTranslation(Offset);
-			}
-		}
-	}
+	BasePose.Initialize(Context);
 }
 
-void FAnimNode_CustomSkeleton::CacheBones_AnyThread(const FAnimationCacheBonesContext& Context)
+void FAnimNode_CustomSkeleton::Update_AnyThread(const FAnimationUpdateContext& Context)
 {
-	Super::CacheBones_AnyThread(Context);
-
 	GetEvaluateGraphExposedInputs().Execute(Context);
+	BasePose.Update(Context);
 
 	const FBoneContainer& RequiredBones = Context.AnimInstanceProxy->GetRequiredBones();
 
@@ -123,4 +73,63 @@ void FAnimNode_CustomSkeleton::CacheBones_AnyThread(const FAnimationCacheBonesCo
 		{
 			return LHS.BoneReference.BoneIndex < RHS.BoneReference.BoneIndex;
 		});
+}
+
+void FAnimNode_CustomSkeleton::Evaluate_AnyThread(FPoseContext& Output)
+{
+	BasePose.Evaluate(Output);
+
+	if (CustomCharacterRuntimeData.CustomConfig && CustomCharacterRuntimeData.CustomSkeletonValues.Num() != CustomCharacterRuntimeData.CustomConfig->SkeletonData.Num())
+	{
+		return;
+	}
+
+	// the way we apply transform is same as FMatrix or FTransform
+	// we apply scale first, and rotation, and translation
+	// if you'd like to translate first, you'll need two nodes that first node does translate and second nodes to rotate.
+	const FBoneContainer& BoneContainer = Output.Pose.GetBoneContainer();
+
+	for (const FCustomSkeletonRuntimeEntry& Entry : CustomBoneDatas)
+	{
+		if (Entry.BoneReference.IsValidToEvaluate(BoneContainer))
+		{
+			FCompactPoseBoneIndex CompactPoseBoneToModify = Entry.BoneReference.GetCompactPoseIndex(BoneContainer);
+			FTransform& NewBoneTM = Output.Pose[CompactPoseBoneToModify];
+
+			if (Entry.ScaleModifies.Num() > 0)
+			{
+				FVector Scale{ FVector::ZeroVector };
+				for (const auto& Data : Entry.ScaleModifies)
+				{
+					Scale += Data.Key * CustomCharacterRuntimeData.GetCustomSkeletonValueScaled(Data.Value);
+				}
+				NewBoneTM.SetScale3D(NewBoneTM.GetScale3D() + Scale);
+			}
+
+			if (Entry.RotationModifies.Num() > 0)
+			{
+				FVector Rotation{ FVector::ZeroVector };
+				for (const auto& Data : Entry.RotationModifies)
+				{
+					Rotation += Data.Key * CustomCharacterRuntimeData.GetCustomSkeletonValueScaled(Data.Value);
+				}
+				NewBoneTM.SetRotation(FQuat(FRotator(Rotation.X, Rotation.Y, Rotation.Z)) * NewBoneTM.GetRotation());
+			}
+
+			if (Entry.OffsetModifies.Num() > 0)
+			{
+				FVector Offset{ FVector::ZeroVector };
+				for (const auto& Data : Entry.OffsetModifies)
+				{
+					Offset += Data.Key * CustomCharacterRuntimeData.GetCustomSkeletonValueScaled(Data.Value);
+				}
+				NewBoneTM.AddToTranslation(Offset);
+			}
+		}
+	}
+}
+
+void FAnimNode_CustomSkeleton::CacheBones_AnyThread(const FAnimationCacheBonesContext& Context)
+{
+	Super::CacheBones_AnyThread(Context);
 }

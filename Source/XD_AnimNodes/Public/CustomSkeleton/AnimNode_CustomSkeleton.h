@@ -34,6 +34,10 @@ public:
 
 	TWeakObjectPtr<UCustomCharacterConfig> CachedConfig;
 
+	// FAnimNode_Base interface
+	void Initialize_AnyThread(const FAnimationInitializeContext& Context) override;
+	void Update_AnyThread(const FAnimationUpdateContext& Context) override;
 	void Evaluate_AnyThread(FPoseContext& Output) override;
 	void CacheBones_AnyThread(const FAnimationCacheBonesContext& Context) override;
+	// End of FAnimNode_Base interface
 };
