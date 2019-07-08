@@ -56,24 +56,24 @@ public:
 	FVector ApplyAxis = FVector(0.f, 1.f, 0.f);
 };
 
-USTRUCT(BlueprintInternalUseOnly)
+USTRUCT(BlueprintType)
 struct XD_ANIMNODES_API FCustomSkeletonEntry
 {
 	GENERATED_BODY()
 public:
-	UPROPERTY(EditAnywhere, Category = "骨架定制")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "骨架定制")
 	FText DisplayName;
-	UPROPERTY(EditAnywhere, Category = "骨架定制")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "骨架定制")
 	FText Category;
 	UPROPERTY(EditAnywhere, Category = "骨架定制")
 	TArray<FCustomSkeletonBoneData> BoneDatas;
-	UPROPERTY(EditAnywhere, Category = "骨架定制")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "骨架定制")
 	float MaxValue = 1.f;
-	UPROPERTY(EditAnywhere, Category = "骨架定制")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "骨架定制")
 	float MinValue = -1.f;
 	UPROPERTY(EditAnywhere, Category = "骨架定制")
 	float Scale = 1.f;
-	UPROPERTY(EditAnywhere, Category = "骨架定制")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "骨架定制")
 	float DefalutValue;
 
 	FText GetBonesDesc() const;
@@ -86,22 +86,22 @@ public:
 	}
 };
 
-USTRUCT(BlueprintInternalUseOnly)
+USTRUCT(BlueprintType)
 struct XD_ANIMNODES_API FCustomMorphEntry
 {
 	GENERATED_BODY()
 public:
-	UPROPERTY(EditAnywhere, Category = "混合变形定制")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "混合变形定制")
 	FText DisplayName;
-	UPROPERTY(EditAnywhere, Category = "混合变形定制")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "混合变形定制")
 	FText Category;
 	UPROPERTY(EditAnywhere, Category = "混合变形定制")
 	TArray<FName> MorphTargetNames;
-	UPROPERTY(EditAnywhere, Category = "混合变形定制")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "混合变形定制")
 	float MaxValue = 1.f;
-	UPROPERTY(EditAnywhere, Category = "混合变形定制")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "混合变形定制")
 	float MinValue = -1.f;
-	UPROPERTY(EditAnywhere, Category = "混合变形定制")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "混合变形定制")
 	float DefalutValue;
 
 	FText GetMorphsDesc() const;
@@ -112,10 +112,10 @@ class XD_ANIMNODES_API UCustomCharacterConfig : public UDataAsset
 {
 	GENERATED_BODY()
 public:
-	UPROPERTY(EditAnywhere, Category = "角色定制")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "角色定制")
 	TArray<FCustomSkeletonEntry> SkeletonData;
 
-	UPROPERTY(EditAnywhere, Category = "角色定制")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "角色定制")
 	TArray<FCustomMorphEntry> MorphData;
 };
 
@@ -124,7 +124,7 @@ struct XD_ANIMNODES_API FCustomCharacterRuntimeData
 {
 	GENERATED_BODY()
 public:
-	UPROPERTY(EditDefaultsOnly, Category = "角色定制")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "角色定制")
 	UCustomCharacterConfig* CustomConfig;
 
 	UPROPERTY(EditAnywhere, Category = "角色定制")
@@ -153,4 +153,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "角色|定制")
 	static void SetCustomSkeletonValue(UPARAM(Ref)FCustomCharacterRuntimeData& Data, int32 Idx, float InValue) { Data.SetCustomSkeletonValue(Idx, InValue); }
+
+	UFUNCTION(BlueprintPure, Category = "角色|定制")
+	static FCustomSkeletonEntry GetCustomSkeletonConfig(const FCustomCharacterRuntimeData& Data, int32 Idx) { return Data.CustomConfig ? Data.CustomConfig->SkeletonData[Idx] : FCustomSkeletonEntry(); }
+
+	UFUNCTION(BlueprintPure, Category = "角色|定制")
+	static FCustomMorphEntry GetCustomMorphConfig(const FCustomCharacterRuntimeData& Data, int32 Idx) { return Data.CustomConfig ? Data.CustomConfig->MorphData[Idx] : FCustomMorphEntry(); }
 };
