@@ -21,7 +21,7 @@ public:
 	FCustomCharacterRuntimeEntry() = default;
 
 private:
-	UPROPERTY(EditAnywhere, Category = "角色定制")
+	UPROPERTY(EditAnywhere, Category = "角色定制", SaveGame)
 	float Value;
 public:
 	void SetValue(float InValue, float MinValue, float MaxValue)
@@ -230,36 +230,36 @@ struct XD_ANIMNODES_API FCustomCharacterRuntimeData
 {
 	GENERATED_BODY()
 public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "角色定制")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "角色定制", EditFixedSize)
 	UCustomCharacterConfig* CustomConfig;
 
 	void SyncConfigSize();
 
-	UPROPERTY(EditAnywhere, Category = "角色定制")
+	UPROPERTY(EditAnywhere, Category = "角色定制", EditFixedSize, SaveGame)
 	TArray<FCustomCharacterRuntimeEntry> CustomSkeletonValues;
 
 	float GetCustomSkeletonValue(int32 Idx) const;
 	float GetCustomSkeletonValueScaled(int32 Idx) const;
 	void SetCustomSkeletonValue(int32 Idx, float InValue);
 
-	UPROPERTY(EditAnywhere, Category = "角色定制")
+	UPROPERTY(EditAnywhere, Category = "角色定制", EditFixedSize, SaveGame)
 	TArray<FCustomCharacterRuntimeEntry> CustomMorphValues;
 
 	float GetCustomMorphValue(int32 Idx) const;
 	void SetCustomMorphValue(int32 Idx, float InValue);
 	void ApplyMorphTarget(USkeletalMeshComponent* SkeletalMeshComponent) const;
 
-	UPROPERTY(EditAnywhere, Category = "角色定制")
+	UPROPERTY(EditAnywhere, Category = "角色定制", EditFixedSize, SaveGame)
 	TArray<float> CustomMaterialFloatValues;
 
 	void ApplyMaterialFloatValues(USkeletalMeshComponent* SkeletalMeshComponent) const;
 
-	UPROPERTY(EditAnywhere, Category = "角色定制")
+	UPROPERTY(EditAnywhere, Category = "角色定制", EditFixedSize, SaveGame)
 	TArray<FLinearColor> CustomMaterialColorValues;
 
 	void ApplyMaterialColorValues(USkeletalMeshComponent* SkeletalMeshComponent) const;
 
-	UPROPERTY(EditAnywhere, Category = "角色定制")
+	UPROPERTY(EditAnywhere, Category = "角色定制", EditFixedSize, SaveGame)
 	TArray<UTexture*> CustomMaterialTextureValues;
 
 	void ApplyMaterialTextureValues(USkeletalMeshComponent* SkeletalMeshComponent) const;

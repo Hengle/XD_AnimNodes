@@ -7,6 +7,7 @@
 #include "SNumericEntryBox.h"
 #include "IDetailChildrenBuilder.h"
 #include "IDetailGroup.h"
+#include "IDetailPropertyRow.h"
 
 #define LOCTEXT_NAMESPACE "CustomSkeletionRuntimeData_Customization"
 
@@ -66,6 +67,8 @@ void FCustomSkeletionRuntimeData_Customization::CustomizeHeader(TSharedRef<class
 
 void FCustomSkeletionRuntimeData_Customization::CustomizeChildren(TSharedRef<class IPropertyHandle> StructPropertyHandle, class IDetailChildrenBuilder& StructBuilder, IPropertyTypeCustomizationUtils& StructCustomizationUtils)
 {
+	//TODO 提供返回至默认值的按钮 SResetToDefaultPropertyEditor
+
 	FCustomCharacterRuntimeData CustomSkeletionRuntimeData = FPropertyCustomizeHelper::GetValue<FCustomCharacterRuntimeData>(StructPropertyHandle);
 	if (CustomSkeletionRuntimeData.CustomConfig)
 	{
@@ -231,38 +234,54 @@ void FCustomSkeletionRuntimeData_Customization::CustomizeChildren(TSharedRef<cla
  		for (int32 Idx = 0; Idx < MaterialColorData.Num(); ++Idx)
  		{
  			const FCustomMaterialColorEntry& Entry = MaterialColorData[Idx];
-			TSharedRef<IPropertyHandle> CustomMaterialColorValues_Handle = StructPropertyHandle->GetChildHandle(GET_MEMBER_NAME_CHECKED(FCustomCharacterRuntimeData, CustomMaterialColorValues)).ToSharedRef();
-			if (int32(FPropertyCustomizeHelper::GetNumChildren(CustomMaterialColorValues_Handle)) > Idx)
+			TSharedRef<IPropertyHandleArray> CustomMaterialColorValues_Handle = StructPropertyHandle->GetChildHandle(GET_MEMBER_NAME_CHECKED(FCustomCharacterRuntimeData, CustomMaterialColorValues))->AsArray().ToSharedRef();
+			uint32 NumElements;
+			CustomMaterialColorValues_Handle->GetNumElements(NumElements);
+			if (int32(NumElements) > Idx)
 			{
-				GroupMap[*Entry.Category.ToString()]->AddWidgetRow().NameContent()
-					[
-						SNew(STextBlock)
-						.Text(Entry.DisplayName)
-					//.ToolTipText(Entry.GetMorphsDesc())
-					]
-				.ValueContent()
-					[
-						CustomMaterialColorValues_Handle->GetChildHandle(Idx)->CreatePropertyValueWidget()
-					];
+				//TODO 还是会显示Array存在的拖拽功能，直接自己写吧
+				IDetailPropertyRow& DetailPropertyRow = GroupMap[*Entry.Category.ToString()]->AddPropertyRow(CustomMaterialColorValues_Handle->GetElement(Idx));
+				DetailPropertyRow.DisplayName(Entry.DisplayName);
+				DetailPropertyRow.GetPropertyHandle()->SetOnChildPropertyValuePreChange(FSimpleDelegate::CreateLambda([=]()
+					{
+						StructPropertyHandle->NotifyPreChange();
+					}));
+				DetailPropertyRow.GetPropertyHandle()->SetOnPropertyValueChanged(FSimpleDelegate::CreateLambda([=]()
+					{
+						StructPropertyHandle->NotifyPostChange(EPropertyChangeType::ValueSet);
+					}));
 			}
  		}
  
  		TArray<FCustomMaterialTextureEntry>& MaterialTextureData = CustomSkeletionRuntimeData.CustomConfig->MaterialTextureData;
  		for (int32 Idx = 0; Idx < MaterialTextureData.Num(); ++Idx)
  		{
+			//TODO 从预制的地方选择
  			const FCustomMaterialTextureEntry& Entry = MaterialTextureData[Idx];
-			TSharedRef<IPropertyHandle> CustomMaterialTextureValues_Handle = StructPropertyHandle->GetChildHandle(GET_MEMBER_NAME_CHECKED(FCustomCharacterRuntimeData, CustomMaterialTextureValues)).ToSharedRef();
-			if (int32(FPropertyCustomizeHelper::GetNumChildren(CustomMaterialTextureValues_Handle)) > Idx)
+			TSharedRef<IPropertyHandleArray> CustomMaterialTextureValues_Handle = StructPropertyHandle->GetChildHandle(GET_MEMBER_NAME_CHECKED(FCustomCharacterRuntimeData, CustomMaterialTextureValues))->AsArray().ToSharedRef();
+			uint32 NumElements;
+			CustomMaterialTextureValues_Handle->GetNumElements(NumElements);
+			TSharedRef<IPropertyHandle> Element = CustomMaterialTextureValues_Handle->GetElement(Idx);
+			Element->SetOnChildPropertyValuePreChange(FSimpleDelegate::CreateLambda([=]()
+				{
+					StructPropertyHandle->NotifyPreChange();
+				}));
+			Element->SetOnPropertyValueChanged(FSimpleDelegate::CreateLambda([=]()
+				{
+					StructPropertyHandle->NotifyPostChange(EPropertyChangeType::ValueSet);
+				}));
+
+			if (int32(NumElements) > Idx)
 			{
 				GroupMap[*Entry.Category.ToString()]->AddWidgetRow().NameContent()
 					[
 						SNew(STextBlock)
 						.Text(Entry.DisplayName)
-					//.ToolTipText(Entry.GetMorphsDesc())
+						//.ToolTipText(Entry.GetMorphsDesc())
 					]
 				.ValueContent()
 					[
-						CustomMaterialTextureValues_Handle->GetChildHandle(Idx)->CreatePropertyValueWidget()
+						Element->CreatePropertyValueWidget()
 					];
 			}
  		}

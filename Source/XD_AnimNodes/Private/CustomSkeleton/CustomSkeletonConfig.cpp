@@ -101,7 +101,7 @@ void FCustomCharacterRuntimeData::SetCustomMorphValue(int32 Idx, float InValue)
 
 void FCustomCharacterRuntimeData::ApplyMorphTarget(USkeletalMeshComponent* SkeletalMeshComponent) const
 {
-	for (int32 Idx = 0; Idx < CustomSkeletonValues.Num(); ++Idx)
+	for (int32 Idx = 0; Idx < CustomMorphValues.Num(); ++Idx)
 	{
 		const FCustomMorphEntry& Entry = CustomConfig->MorphData[Idx];
 		float Value = GetCustomMorphValue(Idx);
