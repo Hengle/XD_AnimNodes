@@ -8,9 +8,10 @@
 #include "CustomSkeletonConfig.generated.h"
 
 class USkeletalMeshComponent;
+class UMaterialInstanceDynamic;
 
 /**
- * 
+ *
  */
 USTRUCT()
 struct XD_ANIMNODES_API FCustomCharacterRuntimeEntry
@@ -86,7 +87,7 @@ public:
 	}
 };
 
-USTRUCT(BlueprintType)
+USTRUCT(BlueprintInternalUseOnly)
 struct XD_ANIMNODES_API FCustomMorphEntry
 {
 	GENERATED_BODY()
@@ -107,6 +108,100 @@ public:
 	FText GetMorphsDesc() const;
 };
 
+USTRUCT(BlueprintType)
+struct XD_ANIMNODES_API FCustomMaterialDataBase
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere, Category = "材质定制")
+	int32 SlotId;
+	UPROPERTY(EditAnywhere, Category = "材质定制")
+	FName ParameterName;
+};
+
+UENUM()
+enum class ECustomMaterialFloatType : uint8
+{
+	Float,
+	ChannelR,
+	ChannelG,
+	ChannelB,
+	ChannelA
+};
+
+USTRUCT(BlueprintType)
+struct XD_ANIMNODES_API FCustomMaterialFloatData : public FCustomMaterialDataBase
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere, Category = "材质定制")
+	ECustomMaterialFloatType CustomMaterialFloatType;
+};
+
+USTRUCT(BlueprintType)
+struct XD_ANIMNODES_API FCustomMaterialColorData : public FCustomMaterialDataBase
+{
+	GENERATED_BODY()
+public:
+
+};
+
+USTRUCT(BlueprintType)
+struct XD_ANIMNODES_API FCustomMaterialTextureData : public FCustomMaterialDataBase
+{
+	GENERATED_BODY()
+public:
+
+};
+
+USTRUCT(BlueprintType)
+struct XD_ANIMNODES_API FCustomMaterialEntryBase
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "材质定制")
+	FText DisplayName;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "材质定制")
+	FText Category;
+};
+
+USTRUCT(BlueprintType)
+struct XD_ANIMNODES_API FCustomMaterialFloatEntry : public FCustomMaterialEntryBase
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "材质定制")
+	TArray<FCustomMaterialFloatData> CustomMaterialFloatDatas;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "材质定制")
+	float MaxValue = 1.f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "材质定制")
+	float MinValue = -1.f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "材质定制")
+	float DefalutValue;
+};
+
+USTRUCT(BlueprintType)
+struct XD_ANIMNODES_API FCustomMaterialColorEntry : public FCustomMaterialEntryBase
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "材质定制")
+	TArray<FCustomMaterialColorData> CustomMaterialColorDatas;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "材质定制")
+	FLinearColor DefalutColor;
+};
+
+USTRUCT(BlueprintType)
+struct XD_ANIMNODES_API FCustomMaterialTextureEntry : public FCustomMaterialEntryBase
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "材质定制")
+	TArray<FCustomMaterialTextureData> CustomMaterialTextureDatas;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "材质定制")
+	UTexture* DefalutTexture;
+};
+
 UCLASS()
 class XD_ANIMNODES_API UCustomCharacterConfig : public UDataAsset
 {
@@ -117,6 +212,17 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "角色定制")
 	TArray<FCustomMorphEntry> MorphData;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "角色定制")
+	TArray<FCustomMaterialFloatEntry> MaterialFloatData;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "角色定制")
+	TArray<FCustomMaterialColorEntry> MaterialColorData;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "角色定制")
+	TArray<FCustomMaterialTextureEntry> MaterialTextureData;
+
+	TArray<FText> GetAllCategoryNames() const;
 };
 
 USTRUCT(BlueprintType)
@@ -127,20 +233,41 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "角色定制")
 	UCustomCharacterConfig* CustomConfig;
 
-	UPROPERTY(EditAnywhere, Category = "角色定制")
-	TArray<FCustomCharacterRuntimeEntry> CustomSkeletonValues;
+	void SyncConfigSize();
 
 	UPROPERTY(EditAnywhere, Category = "角色定制")
-	TArray<FCustomCharacterRuntimeEntry> CustomMorphValues;
+	TArray<FCustomCharacterRuntimeEntry> CustomSkeletonValues;
 
 	float GetCustomSkeletonValue(int32 Idx) const;
 	float GetCustomSkeletonValueScaled(int32 Idx) const;
 	void SetCustomSkeletonValue(int32 Idx, float InValue);
 
+	UPROPERTY(EditAnywhere, Category = "角色定制")
+	TArray<FCustomCharacterRuntimeEntry> CustomMorphValues;
+
 	float GetCustomMorphValue(int32 Idx) const;
 	void SetCustomMorphValue(int32 Idx, float InValue);
-
 	void ApplyMorphTarget(USkeletalMeshComponent* SkeletalMeshComponent) const;
+
+	UPROPERTY(EditAnywhere, Category = "角色定制")
+	TArray<float> CustomMaterialFloatValues;
+
+	void ApplyMaterialFloatValues(USkeletalMeshComponent* SkeletalMeshComponent) const;
+
+	UPROPERTY(EditAnywhere, Category = "角色定制")
+	TArray<FLinearColor> CustomMaterialColorValues;
+
+	void ApplyMaterialColorValues(USkeletalMeshComponent* SkeletalMeshComponent) const;
+
+	UPROPERTY(EditAnywhere, Category = "角色定制")
+	TArray<UTexture*> CustomMaterialTextureValues;
+
+	void ApplyMaterialTextureValues(USkeletalMeshComponent* SkeletalMeshComponent) const;
+
+	void ApplyAllMaterialData(USkeletalMeshComponent* SkeletalMeshComponent) const;
+private:
+	mutable TMap<int32, UMaterialInstanceDynamic*> MIDMap;
+	UMaterialInstanceDynamic* GetMID(USkeletalMeshComponent* SkeletalMeshComponent, int32 Idx) const;
 };
 
 UCLASS()
