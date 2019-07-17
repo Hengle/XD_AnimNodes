@@ -9,6 +9,7 @@
 
 class USkeletalMeshComponent;
 class UMaterialInstanceDynamic;
+class UTexture;
 
 /**
  *
@@ -191,6 +192,15 @@ public:
 	FLinearColor DefalutColor;
 };
 
+UCLASS()
+class XD_ANIMNODES_API UCustomMaterialTextureConfig : public UDataAsset
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "材质定制")
+	TArray<UTexture*> ReplaceTextures;
+};
+
 USTRUCT(BlueprintType)
 struct XD_ANIMNODES_API FCustomMaterialTextureEntry : public FCustomMaterialEntryBase
 {
@@ -200,6 +210,8 @@ public:
 	TArray<FCustomMaterialTextureData> CustomMaterialTextureDatas;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "材质定制")
 	UTexture* DefalutTexture;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "材质定制")
+	UCustomMaterialTextureConfig* TextureConfig;
 };
 
 UCLASS()

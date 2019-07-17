@@ -45,9 +45,10 @@ void FCustomCharacterRuntimeData_Customization::CustomizeHeader(TSharedRef<class
 
 		HeaderRow.NameContent()
 			[
-				CustomConfig_PropertyHandle->CreatePropertyNameWidget()
+				StructPropertyHandle->CreatePropertyNameWidget()
 			]
 			.ValueContent()
+			.MinDesiredWidth(200.f)
 			[
 				CustomConfig_PropertyHandle->CreatePropertyValueWidget()
 			];
@@ -56,8 +57,7 @@ void FCustomCharacterRuntimeData_Customization::CustomizeHeader(TSharedRef<class
 	{
 		HeaderRow.NameContent()
 			[
-				SNew(STextBlock)
-					.Text(LOCTEXT("角色定制配置", "角色定制配置"))
+				StructPropertyHandle->CreatePropertyNameWidget()
 			]
 			.ValueContent()
 			[
@@ -388,7 +388,7 @@ void FCustomCharacterRuntimeData_Customization::CustomizeChildren(TSharedRef<cla
 						FCustomCharacterRuntimeData CustomCharacterRuntimeData = FPropertyCustomizeHelper::GetValue<FCustomCharacterRuntimeData>(StructPropertyHandle);
 						if (CustomCharacterRuntimeData.CustomConfig && Idx < CustomCharacterRuntimeData.CustomMaterialColorValues.Num())
 						{
-							return CustomCharacterRuntimeData.CustomMaterialColorValues[Idx] == CustomCharacterRuntimeData.CustomConfig->MaterialColorData[Idx].DefalutColor;
+							return CustomCharacterRuntimeData.CustomMaterialColorValues[Idx] != CustomCharacterRuntimeData.CustomConfig->MaterialColorData[Idx].DefalutColor;
 						}
 						else
 						{
@@ -400,8 +400,9 @@ void FCustomCharacterRuntimeData_Customization::CustomizeChildren(TSharedRef<cla
 						FCustomCharacterRuntimeData CustomCharacterRuntimeData = FPropertyCustomizeHelper::GetValue<FCustomCharacterRuntimeData>(StructPropertyHandle);
 						if (CustomCharacterRuntimeData.CustomConfig && Idx < CustomCharacterRuntimeData.CustomMaterialColorValues.Num())
 						{
-							PropertyHandle->SetValue(CustomCharacterRuntimeData.CustomConfig->MaterialColorData[Idx].DefalutColor);
+							CustomCharacterRuntimeData.CustomMaterialColorValues[Idx] = CustomCharacterRuntimeData.CustomConfig->MaterialColorData[Idx].DefalutColor;
 						}
+						FPropertyCustomizeHelper::SetValue(StructPropertyHandle, CustomCharacterRuntimeData);
 					})));
 				DetailPropertyRow.GetPropertyHandle()->SetOnChildPropertyValuePreChange(FSimpleDelegate::CreateLambda([=]()
 					{
@@ -422,18 +423,18 @@ void FCustomCharacterRuntimeData_Customization::CustomizeChildren(TSharedRef<cla
 			TSharedRef<IPropertyHandleArray> CustomMaterialTextureValues_Handle = StructPropertyHandle->GetChildHandle(GET_MEMBER_NAME_CHECKED(FCustomCharacterRuntimeData, CustomMaterialTextureValues))->AsArray().ToSharedRef();
 			uint32 NumElements;
 			CustomMaterialTextureValues_Handle->GetNumElements(NumElements);
-			TSharedRef<IPropertyHandle> Element = CustomMaterialTextureValues_Handle->GetElement(Idx);
-			Element->SetOnChildPropertyValuePreChange(FSimpleDelegate::CreateLambda([=]()
-				{
-					StructPropertyHandle->NotifyPreChange();
-				}));
-			Element->SetOnPropertyValueChanged(FSimpleDelegate::CreateLambda([=]()
-				{
-					StructPropertyHandle->NotifyPostChange(EPropertyChangeType::ValueSet);
-				}));
-
 			if (int32(NumElements) > Idx)
 			{
+				TSharedRef<IPropertyHandle> Element = CustomMaterialTextureValues_Handle->GetElement(Idx);
+				Element->SetOnChildPropertyValuePreChange(FSimpleDelegate::CreateLambda([=]()
+					{
+						StructPropertyHandle->NotifyPreChange();
+					}));
+				Element->SetOnPropertyValueChanged(FSimpleDelegate::CreateLambda([=]()
+					{
+						StructPropertyHandle->NotifyPostChange(EPropertyChangeType::ValueSet);
+					}));
+
 				GroupMap[*Entry.Category.ToString()]->AddWidgetRow().NameContent()
 					[
 						SNew(STextBlock)
@@ -441,13 +442,14 @@ void FCustomCharacterRuntimeData_Customization::CustomizeChildren(TSharedRef<cla
 						//.ToolTipText(Entry.GetMorphsDesc())
 					]
 					.ValueContent()
+					.MinDesiredWidth(200.f)
 					[
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot()
 						[
 							Element->CreatePropertyValueWidget()
 						]
-					+ SHorizontalBox::Slot()
+						+ SHorizontalBox::Slot()
 						.AutoWidth()
 						.VAlign(VAlign_Center)
 						.HAlign(HAlign_Center)
@@ -464,7 +466,7 @@ void FCustomCharacterRuntimeData_Customization::CustomizeChildren(TSharedRef<cla
 									FPropertyCustomizeHelper::SetValue(StructPropertyHandle, CustomCharacterRuntimeData);
 									return FReply::Handled();
 								})
-						.Visibility_Lambda([=]()
+							.Visibility_Lambda([=]()
 							{
 								FCustomCharacterRuntimeData CustomCharacterRuntimeData = FPropertyCustomizeHelper::GetValue<FCustomCharacterRuntimeData>(StructPropertyHandle);
 								if (CustomCharacterRuntimeData.CustomConfig && Idx < CustomCharacterRuntimeData.CustomMaterialTextureValues.Num())
