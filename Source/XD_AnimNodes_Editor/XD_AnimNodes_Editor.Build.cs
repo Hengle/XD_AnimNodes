@@ -39,6 +39,7 @@ public class XD_AnimNodes_Editor : ModuleRules
                 "Slate",
                 "SlateCore",
                 "UnrealEd",
+                "EditorStyle",
                 "BlueprintGraph",
                 "AnimGraph",
                 "AnimGraphRuntime",

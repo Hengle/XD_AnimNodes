@@ -12,7 +12,7 @@ void FXD_AnimNodes_EditorModule::StartupModule()
 
 	FPropertyEditorModule& PropertyModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
 
-	RegisterCustomProperty(struct FCustomCharacterRuntimeData, FCustomSkeletionRuntimeData_Customization);
+	RegisterCustomProperty(struct FCustomCharacterRuntimeData, FCustomCharacterRuntimeData_Customization);
 }
 
 void FXD_AnimNodes_EditorModule::ShutdownModule()

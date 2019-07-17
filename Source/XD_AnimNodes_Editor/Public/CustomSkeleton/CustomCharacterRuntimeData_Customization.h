@@ -8,7 +8,7 @@
 /**
  *
  */
-class XD_ANIMNODES_EDITOR_API FCustomSkeletionRuntimeData_Customization : public IPropertyTypeCustomizationMakeInstanceable<FCustomSkeletionRuntimeData_Customization>
+class XD_ANIMNODES_EDITOR_API FCustomCharacterRuntimeData_Customization : public IPropertyTypeCustomizationMakeInstanceable<FCustomCharacterRuntimeData_Customization>
 {
 public:
 	void CustomizeHeader(TSharedRef<class IPropertyHandle> StructPropertyHandle, class FDetailWidgetRow& HeaderRow, IPropertyTypeCustomizationUtils& StructCustomizationUtils) override;
