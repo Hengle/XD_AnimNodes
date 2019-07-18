@@ -10,6 +10,8 @@
 #include "IDetailPropertyRow.h"
 #include "SButton.h"
 #include "XD_PropertyCustomizationEx.h"
+#include "Engine/Texture.h"
+#include "PropertyCustomizationHelpers.h"
 
 #define LOCTEXT_NAMESPACE "CustomCharacterRuntimeData_Customization"
 
@@ -296,7 +298,6 @@ void FCustomCharacterRuntimeData_Customization::CustomizeChildren(TSharedRef<cla
 				[
 					SNew(STextBlock)
 					.Text(Entry.DisplayName)
-					//.ToolTipText(Entry.GetMorphsDesc())
 				]
 			.ValueContent()
 				[
@@ -426,20 +427,19 @@ void FCustomCharacterRuntimeData_Customization::CustomizeChildren(TSharedRef<cla
 			if (int32(NumElements) > Idx)
 			{
 				TSharedRef<IPropertyHandle> Element = CustomMaterialTextureValues_Handle->GetElement(Idx);
-				Element->SetOnChildPropertyValuePreChange(FSimpleDelegate::CreateLambda([=]()
-					{
-						StructPropertyHandle->NotifyPreChange();
-					}));
-				Element->SetOnPropertyValueChanged(FSimpleDelegate::CreateLambda([=]()
-					{
-						StructPropertyHandle->NotifyPostChange(EPropertyChangeType::ValueSet);
-					}));
+ 				Element->SetOnChildPropertyValuePreChange(FSimpleDelegate::CreateLambda([=]()
+ 					{
+ 						StructPropertyHandle->NotifyPreChange();
+ 					}));
+ 				Element->SetOnPropertyValueChanged(FSimpleDelegate::CreateLambda([=]()
+ 					{
+ 						StructPropertyHandle->NotifyPostChange(EPropertyChangeType::ValueSet);
+ 					}));
 
 				GroupMap[*Entry.Category.ToString()]->AddWidgetRow().NameContent()
 					[
 						SNew(STextBlock)
 						.Text(Entry.DisplayName)
-						//.ToolTipText(Entry.GetMorphsDesc())
 					]
 					.ValueContent()
 					.MinDesiredWidth(200.f)
@@ -447,7 +447,16 @@ void FCustomCharacterRuntimeData_Customization::CustomizeChildren(TSharedRef<cla
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot()
 						[
-							Element->CreatePropertyValueWidget()
+							SNew(SObjectPropertyEntryBox)
+							.AllowedClass(UTexture::StaticClass())
+							.PropertyHandle(Element)
+							.OnShouldFilterAsset_Lambda([=](const FAssetData& AssetData)
+								{
+									FCustomCharacterRuntimeData CustomCharacterRuntimeData = FPropertyCustomizeHelper::GetValue<FCustomCharacterRuntimeData>(StructPropertyHandle);
+									UCustomMaterialTextureConfig* TextureConfig = CustomCharacterRuntimeData.CustomConfig ? CustomCharacterRuntimeData.CustomConfig->MaterialTextureData[Idx].TextureConfig : nullptr;
+									bool NeedShow = TextureConfig && TextureConfig->ReplaceTextures.ContainsByPredicate([&](UTexture* Texture) { return Texture ? Texture->GetFName() == AssetData.AssetName : false; });
+									return !NeedShow;
+								})
 						]
 						+ SHorizontalBox::Slot()
 						.AutoWidth()
@@ -467,17 +476,17 @@ void FCustomCharacterRuntimeData_Customization::CustomizeChildren(TSharedRef<cla
 									return FReply::Handled();
 								})
 							.Visibility_Lambda([=]()
-							{
-								FCustomCharacterRuntimeData CustomCharacterRuntimeData = FPropertyCustomizeHelper::GetValue<FCustomCharacterRuntimeData>(StructPropertyHandle);
-								if (CustomCharacterRuntimeData.CustomConfig && Idx < CustomCharacterRuntimeData.CustomMaterialTextureValues.Num())
 								{
-									return CustomCharacterRuntimeData.CustomMaterialTextureValues[Idx] == CustomCharacterRuntimeData.CustomConfig->MaterialTextureData[Idx].DefalutTexture ? EVisibility::Visible : EVisibility::Hidden;
-								}
-								else
-								{
-									return EVisibility::Hidden;
-								}
-							})
+									FCustomCharacterRuntimeData CustomCharacterRuntimeData = FPropertyCustomizeHelper::GetValue<FCustomCharacterRuntimeData>(StructPropertyHandle);
+									if (CustomCharacterRuntimeData.CustomConfig && Idx < CustomCharacterRuntimeData.CustomMaterialTextureValues.Num())
+									{
+										return CustomCharacterRuntimeData.CustomMaterialTextureValues[Idx] == CustomCharacterRuntimeData.CustomConfig->MaterialTextureData[Idx].DefalutTexture ? EVisibility::Visible : EVisibility::Hidden;
+									}
+									else
+									{
+										return EVisibility::Hidden;
+									}
+								})
 						]
 					];
 			}

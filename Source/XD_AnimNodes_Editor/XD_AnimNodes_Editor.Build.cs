@@ -45,6 +45,7 @@ public class XD_AnimNodes_Editor : ModuleRules
                 "AnimGraphRuntime",
                 "RHI",
                 "InputCore",
+                "PropertyEditor",
 
                 "XD_AnimNodes",
 
