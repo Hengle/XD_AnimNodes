@@ -170,7 +170,7 @@ void FCustomCharacterRuntimeData::ApplyMaterialFloatValues(USkeletalMeshComponen
 			{
 				Color.B = CustomMaterialFloatValues[Data.IdxB];
 			}
-			if (Data.IdxR != INDEX_NONE)
+			if (Data.IdxA != INDEX_NONE)
 			{
 				Color.A = CustomMaterialFloatValues[Data.IdxA];
 			}
