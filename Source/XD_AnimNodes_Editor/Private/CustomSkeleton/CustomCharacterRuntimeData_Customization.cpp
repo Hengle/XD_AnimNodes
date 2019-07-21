@@ -196,7 +196,7 @@ void FCustomCharacterRuntimeData_Customization::CustomizeChildren(TSharedRef<cla
 								FCustomCharacterRuntimeData CustomCharacterRuntimeData = FPropertyCustomizeHelper::GetValue<FCustomCharacterRuntimeData>(StructPropertyHandle);
 								if (CustomCharacterRuntimeData.CustomConfig && Idx < CustomCharacterRuntimeData.CustomSkeletonValues.Num())
 								{
-									return CustomCharacterRuntimeData.GetCustomSkeletonValue(Idx) == CustomCharacterRuntimeData.CustomConfig->SkeletonData[Idx].DefalutValue ? EVisibility::Visible : EVisibility::Hidden;
+									return CustomCharacterRuntimeData.GetCustomSkeletonValue(Idx) != CustomCharacterRuntimeData.CustomConfig->SkeletonData[Idx].DefalutValue ? EVisibility::Visible : EVisibility::Hidden;
 								}
 								else
 								{
@@ -279,7 +279,7 @@ void FCustomCharacterRuntimeData_Customization::CustomizeChildren(TSharedRef<cla
 								FCustomCharacterRuntimeData CustomCharacterRuntimeData = FPropertyCustomizeHelper::GetValue<FCustomCharacterRuntimeData>(StructPropertyHandle);
 								if (CustomCharacterRuntimeData.CustomConfig && Idx < CustomCharacterRuntimeData.CustomMorphValues.Num())
 								{
-									return CustomCharacterRuntimeData.GetCustomMorphValue(Idx) == CustomCharacterRuntimeData.CustomConfig->MorphData[Idx].DefalutValue ? EVisibility::Visible : EVisibility::Hidden;
+									return CustomCharacterRuntimeData.GetCustomMorphValue(Idx) != CustomCharacterRuntimeData.CustomConfig->MorphData[Idx].DefalutValue ? EVisibility::Visible : EVisibility::Hidden;
 								}
 								else
 								{
@@ -361,7 +361,7 @@ void FCustomCharacterRuntimeData_Customization::CustomizeChildren(TSharedRef<cla
 								FCustomCharacterRuntimeData CustomCharacterRuntimeData = FPropertyCustomizeHelper::GetValue<FCustomCharacterRuntimeData>(StructPropertyHandle);
 								if (CustomCharacterRuntimeData.CustomConfig && Idx < CustomCharacterRuntimeData.CustomMaterialFloatValues.Num())
 								{
-									return CustomCharacterRuntimeData.CustomMaterialFloatValues[Idx] == CustomCharacterRuntimeData.CustomConfig->MaterialFloatData[Idx].DefalutValue ? EVisibility::Visible : EVisibility::Hidden;
+									return CustomCharacterRuntimeData.CustomMaterialFloatValues[Idx] != CustomCharacterRuntimeData.CustomConfig->MaterialFloatData[Idx].DefalutValue ? EVisibility::Visible : EVisibility::Hidden;
 								}
 								else
 								{
@@ -457,15 +457,19 @@ void FCustomCharacterRuntimeData_Customization::CustomizeChildren(TSharedRef<cla
 									bool NeedShow = TextureConfig && TextureConfig->ReplaceTextures.ContainsByPredicate([&](UTexture* Texture) { return Texture ? Texture->GetFName() == AssetData.AssetName : false; });
 									return !NeedShow;
 								})
-						]
-						+ SHorizontalBox::Slot()
-						.AutoWidth()
-						.VAlign(VAlign_Center)
-						.HAlign(HAlign_Center)
-						.Padding(FMargin(8, 0, 2, 0))
-						[
-							SNew(FCustomCharacterWidget::SResetToDefaultButton)
-							.OnClicked_Lambda([=]()
+							.CustomResetToDefault(FResetToDefaultOverride::Create(FIsResetToDefaultVisible::CreateLambda([=](TSharedPtr<IPropertyHandle> PropertyHandle)
+							{
+								FCustomCharacterRuntimeData CustomCharacterRuntimeData = FPropertyCustomizeHelper::GetValue<FCustomCharacterRuntimeData>(StructPropertyHandle);
+								if (CustomCharacterRuntimeData.CustomConfig && Idx < CustomCharacterRuntimeData.CustomMaterialTextureValues.Num())
+								{
+									return CustomCharacterRuntimeData.CustomMaterialTextureValues[Idx] != CustomCharacterRuntimeData.CustomConfig->MaterialTextureData[Idx].DefalutTexture;
+								}
+								else
+								{
+									return false;
+								}
+							}),
+							FResetToDefaultHandler::CreateLambda([=](TSharedPtr<IPropertyHandle> PropertyHandle)
 								{
 									FCustomCharacterRuntimeData CustomCharacterRuntimeData = FPropertyCustomizeHelper::GetValue<FCustomCharacterRuntimeData>(StructPropertyHandle);
 									if (CustomCharacterRuntimeData.CustomConfig && Idx < CustomCharacterRuntimeData.CustomMaterialTextureValues.Num())
@@ -473,20 +477,7 @@ void FCustomCharacterRuntimeData_Customization::CustomizeChildren(TSharedRef<cla
 										CustomCharacterRuntimeData.CustomMaterialTextureValues[Idx] = CustomCharacterRuntimeData.CustomConfig->MaterialTextureData[Idx].DefalutTexture;
 									}
 									FPropertyCustomizeHelper::SetValue(StructPropertyHandle, CustomCharacterRuntimeData);
-									return FReply::Handled();
-								})
-							.Visibility_Lambda([=]()
-								{
-									FCustomCharacterRuntimeData CustomCharacterRuntimeData = FPropertyCustomizeHelper::GetValue<FCustomCharacterRuntimeData>(StructPropertyHandle);
-									if (CustomCharacterRuntimeData.CustomConfig && Idx < CustomCharacterRuntimeData.CustomMaterialTextureValues.Num())
-									{
-										return CustomCharacterRuntimeData.CustomMaterialTextureValues[Idx] == CustomCharacterRuntimeData.CustomConfig->MaterialTextureData[Idx].DefalutTexture ? EVisibility::Visible : EVisibility::Hidden;
-									}
-									else
-									{
-										return EVisibility::Hidden;
-									}
-								})
+								})))
 						]
 					];
 			}
