@@ -9,10 +9,6 @@
 void FXD_AnimNodes_EditorModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
-
-	FPropertyEditorModule& PropertyModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
-
-	RegisterCustomProperty(struct FCustomCharacterRuntimeData, FCustomCharacterRuntimeData_Customization);
 }
 
 void FXD_AnimNodes_EditorModule::ShutdownModule()
